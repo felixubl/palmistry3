@@ -22,6 +22,16 @@ straight_flush = np.array(
     ]
 ).T
 
+full_house = np.array(
+    [
+        [1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    ]
+).T
+
 
 @njit(cache=True, fastmath=True)
 def get_hand_vector(cards):
@@ -35,6 +45,7 @@ def get_hand_vector(cards):
     return out
 
 
+@njit(cache=True, fastmath=True)
 def find_straight_flush(cards):
     is_straight_flush = 0
     hand_vector = get_hand_vector(cards)
@@ -47,14 +58,14 @@ def find_straight_flush(cards):
 
         is_straight_flush = find_straight(flush_cards_hand_vector)
 
-    return is_straight_flush
+    return is_straight_flush * pow(10, 4)
 
 
 @njit(cache=True, fastmath=True)
 def find_quads(hand_vector):
     for i in range(16, -1, -1):
         if hand_vector[i] == 4:
-            return i
+            return i * pow(10, 9)
     return -1
 
 
@@ -74,17 +85,23 @@ def find_full_house(hand_vector):
                 break
     if i3 == -1 or i2 == -1:
         return -1
-    return i3 * 100 + i2
+    return (i3 * 100 + i2) * pow(10, 6)
 
 
 @njit(cache=True, fastmath=True)
 def find_flush(hand_vector):
     for i in range(0, 4):
         if hand_vector[i] > 4:
-            return True, i
+            return True, i * pow(10, 7)
 
     return False, None
 
+@njit(cache=True, fastmath=True)
+def get_hand_score(hand_vector):
+    s = 0
+    for i in range(4, hand_vector.shape[0]):
+        s += hand_vector[i] * i
+    return s
 
 @njit(cache=True, fastmath=True)
 def get_flush_cards(cards, index):
@@ -94,7 +111,6 @@ def get_flush_cards(cards, index):
     for j in range(n):
         if cards[index, j] != 0:
             cnt += 1
-    # Allocate and copy
     out = np.empty((m, cnt), dtype=cards.dtype)
     pos = 0
     for j in range(n):
@@ -107,6 +123,7 @@ def get_flush_cards(cards, index):
 
 @njit(cache=True, fastmath=True)
 def find_straight(hand_vector):
+
     n = hand_vector.size
     if n != 17:
         raise TypeError("Not a Hand Vector")
@@ -119,7 +136,7 @@ def find_straight(hand_vector):
                 return i + run_len
             run_len = 0
     if run_len >= 5:
-        return 4 + run_len - 1
+        return (4 + run_len - 1) * pow(10, 6)
     if (
         (hand_vector[16] != 0)
         and (hand_vector[4] != 0)
@@ -127,7 +144,7 @@ def find_straight(hand_vector):
         and (hand_vector[6] != 0)
         and (hand_vector[7] != 0)
     ):
-        return 7
+        return 7 * pow(10, 6)
     return 0
 
 
@@ -135,7 +152,7 @@ def find_straight(hand_vector):
 def find_trips(hand_vector):
     for i in range(16, -1, -1):
         if hand_vector[i] == 3:
-            return i
+            return i * pow(10, 5)
     return -1
 
 
@@ -143,48 +160,38 @@ def find_trips(hand_vector):
 def find_pairs(hand_vector):
     for i in range(16, -1, -1):
         if hand_vector[i] == 2:
-            return i
+            return i * pow(10, 2)
     return -1
 
 
 @njit(cache=True, fastmath=True)
 def find_high_card(hand_vector):
-    for i in range(len(hand_vector) - 1, -1, -1):
-        if hand_vector[i] == 1:
-            return i
-
+    rev = hand_vector[::-1]
+    n = hand_vector.size
+    for i in range(n):
+        if rev[i] == 1:
+            return n - 1 - i - 1
     return -1
 
 
 if __name__ == "__main__":
     hand_1 = quad_2s
     hand_2 = straight_flush
+    hand_3 = full_house
 
     hand_1_hand_vector = get_hand_vector(hand_1)
-
-    print(hand_1_hand_vector)
 
     hand_1_flush, hand_1_flush_mask = find_flush(hand_1_hand_vector)
 
     print(find_high_card(hand_1_hand_vector))
 
-    # hand_1_flush_cards = get_flush_cards(hand_1, hand_1_flush_mask)
-
-    # print(hand_1_flush_cards)
-
     hand_2_hand_vector = get_hand_vector(hand_2)
-
-    print(hand_2_hand_vector)
 
     hand_2_flush, hand_2_flush_mask = find_flush(hand_2_hand_vector)
 
     hand_2_flush_cards = get_flush_cards(hand_2, hand_2_flush_mask)
 
-    print(hand_2_flush_cards)
-
     hand_2_flush_cards_hand_vector = get_hand_vector(hand_2_flush_cards)
-
-    print(hand_2_flush_cards_hand_vector, hand_2_flush_cards_hand_vector.shape)
 
     print(find_high_card(hand_2_flush_cards_hand_vector))
 
@@ -195,3 +202,7 @@ if __name__ == "__main__":
     print(find_straight_flush(hand_1))
 
     print(find_quads(hand_1_hand_vector))
+
+    full_house_hand_vector = get_hand_vector(full_house)
+
+    print(find_full_house(full_house_hand_vector))
