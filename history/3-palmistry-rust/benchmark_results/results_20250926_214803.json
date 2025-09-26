@@ -1,0 +1,29 @@
+{
+  "timestamp": "20250926_214803",
+  "benchmarks": [
+    {
+      "hands": 1000000,
+      "throughput": 102307463,
+      "instructions": 3587568026,
+      "cycles": 776206858,
+      "rss_bytes": 9453568,
+      "ipc": 4.621922608676565
+    },
+    {
+      "hands": 10000000,
+      "throughput": 101379393,
+      "instructions": 35607528467,
+      "cycles": 7590176234,
+      "rss_bytes": 81428480,
+      "ipc": 4.691265046982307
+    },
+    {
+      "hands": 100000000,
+      "throughput": 101022121,
+      "instructions": 355880723737,
+      "cycles": 75903429908,
+      "rss_bytes": 801406976,
+      "ipc": 4.688598712447528
+    }
+  ]
+}

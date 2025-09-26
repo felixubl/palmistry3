@@ -1,5 +1,5 @@
 accumulator (ignore): 9736018
-        0.33 real         0.19 user         0.00 sys
+        0.51 real         0.20 user         0.00 sys
              9453568  maximum resident set size
                    0  average shared memory size
                    0  average unshared data size
@@ -13,7 +13,7 @@ accumulator (ignore): 9736018
                    0  messages received
                    0  signals received
                    0  voluntary context switches
-                  47  involuntary context switches
-          3524128896  instructions retired
-           767407468  cycles elapsed
+                  25  involuntary context switches
+          3540313910  instructions retired
+           761075098  cycles elapsed
              9060592  peak memory footprint

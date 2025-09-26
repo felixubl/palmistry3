@@ -1,0 +1,6 @@
+Benchmark started at Fri Sep 26 21:41:39 CEST 2025
+System: arm64 on macOS 15.6
+
+=== Building ===
+warning: build failed, waiting for other jobs to finish...
+error: could not compile `palmistry-rust` (example "throughput_parallel") due to 4 previous errors
