@@ -1,0 +1,64 @@
+Benchmark started at Fri Sep 26 21:37:28 CEST 2025
+System: arm64 on macOS 15.6
+
+=== Building ===
+    Finished `release` profile [optimized] target(s) in 0.07s
+
+=== Binary Info ===
+Binary size: 485K
+
+=== Performance Measurements ===
+
+--- Small: 1,000,000 hands ---
+Throughput:        128.31 M hands/sec
+Time/hand:         8.0 ns
+Instructions/hand: 3524
+Cycles/hand:       767
+IPC:               4.59
+RSS:               9.0 MB
+Page faults:       891
+
+--- Medium: 10,000,000 hands ---
+Throughput:        132.89 M hands/sec
+Time/hand:         7.5 ns
+Instructions/hand: 3497
+Cycles/hand:       753
+IPC:               4.64
+RSS:               77.6 MB
+Page faults:       5,281
+
+--- Large: 100,000,000 hands ---
+Throughput:        120.44 M hands/sec
+Time/hand:         8.3 ns
+Instructions/hand: 3496
+Cycles/hand:       751
+IPC:               4.65
+RSS:               764.2 MB
+Page faults:       49,227
+
+=== System Info ===
+CPU: Apple M4 Pro
+
+Cache sizes:
+  L1I: 192 KB
+  L1D: 128 KB
+  L2:  16.0 MB
+
+=== Performance Summary ===
+
+Throughput across scales:
+      1M hands: 128.31 M/sec (IPC: 4.59)
+     10M hands: 132.89 M/sec (IPC: 4.64)
+    100M hands: 120.44 M/sec (IPC: 4.65)
+
+Average: 127.21 M hands/sec
+Variance: 12.44 M/sec (9.8%)
+
+Average IPC: 4.63
+→ IPC ≥ 4.5 indicates L1 cache residency
+
+=========================================
+         Benchmark Complete
+=========================================
+
+All results in: benchmark_results/
