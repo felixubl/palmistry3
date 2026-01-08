@@ -1,4 +1,4 @@
-# poker_eval
+# palmistry
 
 Fast Texas Hold'em hand evaluation and equity calculation.
 
