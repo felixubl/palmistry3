@@ -1,11 +1,4 @@
-//! LUTs for 13-bit rank masks (0..8191).
-//!
-//! This mirrors your Python approach: small tables that are extremely cache-friendly.
-//!
-//! - POPCNT13[mask]      -> number of set bits
-//! - HIBIT13[mask]       -> highest set bit index (0..12) or -1
-//! - STRAIGHT_END13[mask]-> straight "end rank" index (0..12) or -1
-//!                          wheel A2345 returns 3 (Five-high)
+//! Lookup tables for 13-bit rank masks.
 
 use crate::bitboard::MASK13;
 

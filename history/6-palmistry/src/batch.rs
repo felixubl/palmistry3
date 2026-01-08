@@ -1,13 +1,4 @@
-//! Batch evaluation helpers.
-//!
-//! Goal: keep evaluation separate from generation.
-//!
-//! - Generation creates Vec<BitBoard4x13> (or streams them).
-//! - Evaluation consumes &[BitBoard4x13] and produces scores or reductions.
-//!
-//! This file provides a very cheap "sum of packed scores" reduction, which is
-//! great for benchmarks because it prevents the compiler from optimizing away
-//! work but avoids allocating an output array.
+//! Batch evaluation utilities.
 
 use crate::{evaluate_u32, BitBoard4x13};
 

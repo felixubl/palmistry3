@@ -1,10 +1,6 @@
-//! LUT-based evaluator over BitBoard4x13.
-//!
-//! This is the Rust analogue of your Python evaluator core: compute suit masks,
-//! rank union, multiplicity masks, then decide the best category, finally pack
-//! into a u32 Score.
+//! Hand evaluation using lookup tables.
 
-use crate::bitboard::{BitBoard4x13, MASK13};
+use crate::bitboard::BitBoard4x13;
 use crate::lut13::{hibit13, popcnt13, straight_end13};
 use crate::score::{pack_score, Category, Score};
 
@@ -15,17 +11,11 @@ fn has_two_or_more_bits(x: u16) -> bool {
 
 #[inline(always)]
 fn top5_rank_indices_from_mask(mut m: u16) -> [u8; 5] {
-    // Return 5 indices (hi..lo). For flush/high-card paths we should always have >=5 ranks.
     let mut out = [0u8; 5];
-    m &= MASK13;
-
     let mut i = 0usize;
     while i < 5 {
-        // pick MSB
         let idx = hibit13(m);
         out[i] = idx as u8;
-
-        // clear that MSB bit
         m &= !(1u16 << (idx as u16));
         i += 1;
     }
@@ -35,19 +25,15 @@ fn top5_rank_indices_from_mask(mut m: u16) -> [u8; 5] {
 #[inline(always)]
 pub fn evaluate_u32(hand: &BitBoard4x13) -> Score {
     let h = hand.suits_array();
-    let h0 = h[0] & MASK13;
-    let h1 = h[1] & MASK13;
-    let h2 = h[2] & MASK13;
-    let h3 = h[3] & MASK13;
+    let h0 = h[0];
+    let h1 = h[1];
+    let h2 = h[2];
+    let h3 = h[3];
 
-    let ranks: u16 = (h0 | h1 | h2 | h3) & MASK13;
-
-    // Multiplicity masks (by rank across suits)
-    let ge4: u16 = (h0 & h1 & h2 & h3) & MASK13;
-    let ge2: u16 = ((h0 & h1) | (h0 & h2) | (h0 & h3) | (h1 & h2) | (h1 & h3) | (h2 & h3)) & MASK13;
-    let ge3: u16 = ((h0 & h1 & h2) | (h0 & h1 & h3) | (h0 & h2 & h3) | (h1 & h2 & h3)) & MASK13;
-
-    // Straight flush
+    let ranks: u16 = h0 | h1 | h2 | h3;
+    let ge4: u16 = h0 & h1 & h2 & h3;
+    let ge2: u16 = (h0 & h1) | (h0 & h2) | (h0 & h3) | (h1 & h2) | (h1 & h3) | (h2 & h3);
+    let ge3: u16 = (h0 & h1 & h2) | (h0 & h1 & h3) | (h0 & h2 & h3) | (h1 & h2 & h3);
     let mut best_sf: i8 = -1;
     if popcnt13(h0) >= 5 {
         let se = straight_end13(h0);

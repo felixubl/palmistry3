@@ -1,14 +1,4 @@
-//! Packed u32 score.
-//!
-//! Layout (same spirit as your Python):
-//! bits 20..23 : category (0..15), higher is better
-//! bits 16..19 : r0
-//! bits 12..15 : r1
-//! bits  8..11 : r2
-//! bits  4..7  : r3
-//! bits  0..3  : r4
-//!
-//! Each r* is a 4-bit rank index (0..12). Unused slots should be 0.
+//! Packed u32 score representation.
 
 #[repr(transparent)]
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Ord, PartialOrd, Hash)]
