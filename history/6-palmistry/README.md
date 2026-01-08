@@ -4,9 +4,23 @@ Fast Texas Hold'em hand evaluation and equity calculation.
 
 ## Performance
 
-- Evaluation: 40-45 ns/hand (~25M hands/sec, single-threaded)
-- Exact equity: river 94ns, turn 1.5μs, flop 32μs, preflop HU 35ms
-- Monte Carlo (10k iter): HU 371μs, 3-way 646μs, 6-way 971μs
+**Evaluation:** 40-45 ns/hand (~25M hands/sec, single-threaded)
+
+**Exact equity:**
+- River: 94ns
+- Turn: 1.5μs
+- Flop: 32μs
+- Preflop (HU): 35ms
+
+**Monte Carlo (heads-up preflop):**
+- 1k iterations: 28μs
+- 10k iterations: 394μs
+- 100k iterations: 4.3ms
+- 1M iterations: 43ms
+
+**Monte Carlo multi-way (10k iterations):**
+- 3-way: 646μs
+- 6-way: 971μs
 
 ## Usage
 
