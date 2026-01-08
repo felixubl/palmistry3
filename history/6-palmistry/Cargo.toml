@@ -1,0 +1,21 @@
+[package]
+name = "poker_eval"
+version = "0.1.0"
+edition = "2021"
+license = "MIT OR Apache-2.0"
+
+[lib]
+name = "poker_eval"
+path = "src/lib.rs"
+
+[dependencies]
+rayon = { version = "1.10", optional = true }
+
+[features]
+default = []
+parallel = ["dep:rayon"]
+
+[profile.release]
+lto = true
+codegen-units = 1
+panic = "abort"
