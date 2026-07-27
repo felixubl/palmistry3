@@ -1,0 +1,22 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build-and-test:
+    # arm64: the evaluator's flush test uses NEON intrinsics.
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build
+        run: make all
+
+      - name: Test
+        run: make test
+
+      - name: Benchmark
+        run: make bench

@@ -1,0 +1,13 @@
+build/
+*.o
+*.d
+*.dSYM/
+*.gcda
+*.gcno
+compile_commands.json
+.cache/
+
+.DS_Store
+.vscode/
+.idea/
+*.swp
