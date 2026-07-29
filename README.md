@@ -351,11 +351,11 @@ faster per hand. Nothing about the poker logic changes: every step is bitwise wo
 on 13-bit rank masks, and an AND does not care whether the register holds one hand
 or eight side by side. Three things make that pay rather than merely work.
 
-**The transpose is free.** Vector code wants one register holding the clubs of
-eight different hands, another the diamonds, and so on. That is the transpose of
-what a `Hand` is, one word holding four suits, and a transpose normally costs a
-fistful of shuffles, which is exactly the overhead that makes a lot of
-plausible-looking vectorisation not worth doing. Here it costs nothing.
+**The transpose costs one instruction.** Vector code wants one register holding the
+clubs of eight different hands, another the diamonds, and so on. That is the
+transpose of what a `Hand` is, one word holding four suits, and a transpose normally
+costs a fistful of shuffles, which is exactly the overhead that makes a lot of
+plausible-looking vectorisation not worth doing. Here one instruction does it.
 `vld4q_u16` is a four-way *de-interleaving* load: it reads 32 consecutive `uint16`
 and deals every fourth one to the same register, like dealing cards. Eight
 consecutive hands in memory *are* 32 consecutive `uint16`, and every fourth one is
@@ -364,6 +364,17 @@ the same suit. So the load already is the transpose.
 That only falls out because a hand's four suit lanes are contiguous 16-bit words,
 which was chosen so that a card's code is its own bit index. The batch path is
 collecting a dividend on a decision made for an unrelated reason.
+
+One instruction is not the same as free, and an earlier draft of this file claimed
+free, which was wrong. Handing the same kernel four *already* transposed suit-major
+arrays and loading them with four plain `vld1q_u16` measures about **6% faster**. So
+the de-interleave is not costless, it is merely much cheaper than the explicit
+swizzle it replaces, which is what the instruction exists for.
+
+There is a practical consequence for a caller that generates its own hands, such as
+an equity simulator: storing them suit-major, as four arrays rather than one array
+of `Hand`, buys that 6%. It is not offered here because it makes a worse API for
+everyone who simply has a `Hand`, and because 6% is not worth two entry points.
 
 **The rejected design becomes the winning one.** Eight hands in one register
 disagree about their category, so there is nothing to branch on: the cascade has to
@@ -535,13 +546,14 @@ bits and a lane is 64, so a whole hand fits in one lane and batching is just N
 hands in N lanes, which an ordinary contiguous `vload4` already gives you. OpenCL C
 has no de-interleaving load primitive, so he could not have used one. This
 evaluator spends lanes on hands *per suit*, four `uint16x8_t` registers of eight
-hands each, which does need a transpose and gets it free from `vld4q_u16`. The
-payoff is density, eight hands per 128-bit register against two, and no masking
-between suit fields, since separate registers cannot leak bits the way adjacent
-13-bit fields inside one lane can. Using a de-interleaving load to get
-array-of-structs to struct-of-arrays for free is a well-known general SIMD
-technique and is not claimed here either; what I have not found is it being used
-this way in a card evaluator.
+hands each, which does need a transpose and gets it from `vld4q_u16` for one
+instruction. The payoff is density, eight hands per 128-bit register against two,
+and no masking between suit fields, since separate registers cannot leak bits the
+way adjacent 13-bit fields inside one lane can. Using a de-interleaving load for
+array-of-structs to struct-of-arrays is a well-known general SIMD technique, written
+up by Fabian Giesen in
+[SIMD transposes 2](https://fgiesen.wordpress.com/2013/08/29/simd-transposes-2/)
+(2013), and is not claimed here.
 
 What he does *not* do is guard a rare block on a whole-batch test. There is no
 `any(`/`all(` anywhere in his evaluator, every `max` is component-wise rather than
@@ -549,7 +561,42 @@ horizontal, and his own pre-branchless ancestor's `if (flushes) { ... }` was del
 outright when it was vectorised rather than converted into a lane-population test,
 so the wasted work is never clawed back. The `vmaxvq` guard over the flush block
 here, and the finding that such a guard pays at 3% frequency and costs 27% at 7.6%,
-is the one part of the batch path I have not found prior art for.
+is the one part of the batch path for which no prior art turned up.
+
+**[wide-hand-eval](https://github.com/SavaGlavan/wide-hand-eval) by SavaGlavan
+arrived at essentially this kernel independently, and did so while this was being
+written.** Its most recent commit is 2026-07-15. It is Rust on AVX-512, batching
+sixteen hands, and it is the same design in the parts that matter: verified from
+source, it `transmute`s a `u64x16` of hands into a `u16x64`, which is the same
+16-bit suit-lane layout; it detects flushes with `count_ones()`, `simd_ge(splat(5))`
+and a `select`, which is the same per-lane popcount and threshold; it folds suits
+with `x | x >> 32` then `| >> 16`; and it carries no tables. Two people reaching the
+same place from different instruction sets in the same month is the strongest
+evidence available that the design is the natural one rather than a clever one.
+
+The instructive difference is the transpose. x86 has no four-way de-interleaving
+load, so wide-hand-eval spells it out as `simd_swizzle!` over indices
+`[0,4,8,...]`, `[1,5,9,...]` and so on: precisely what `LD4` does in hardware,
+written by hand because the hardware will not. Giesen's article and
+[this Stack Overflow answer](https://stackoverflow.com/questions/37106500) both
+note the asymmetry directly, the latter advising that you should not pass on
+de-interleaving loads where they exist.
+
+That also explains why nobody had used `vld4q_u16` for this. It needs a 16-bit suit
+stride *and* batching across hands *and* NEON, and those have not co-occurred.
+[zig-poker-eval](https://github.com/lox/zig-poker-eval) (2025) batches on NEON but
+lays suits out at a 13-bit stride (`[13 spades][13 hearts][13 diamonds][13 clubs]`,
+verified from source), which forecloses a stride-4 load outright. OMPEval is the
+sharpest case: its `Hand` comments "Bits 64-128: Bit mask for all cards (suits are
+in 16-bit groups)" immediately above `__m128i mData`, so it has the 16-bit stride
+and SIMD in the same struct, and still every intrinsic it uses works within a single
+hand. The prerequisites existed and went unused.
+
+Honest limits on that search: Two Plus Two's evaluator mega-thread, poker-ai.org,
+r/simd and Stack Overflow were swept and are clean, but zekyll's own OMPEval
+announcement thread is unreachable, and X, Discord, Usenet and non-English forums
+were not searched. Steve Brecher's HandEval was never inspected. "No prior art
+found" is all that is claimed.
 
 Other independent arrivals at the bitmask-comparable score:
 [MrKWatkins](https://www.mrkwatkins.co.uk/evaluating-poker-hands/) (2022), who
@@ -560,7 +607,9 @@ Further credits:
 
 - The four-suit-lane representation appears in Steve Brecher's HandEval and in
   Andrew Prock's [PokerStove](https://github.com/andrewprock/pokerstove), among
-  others. The 16-bit lane stride specifically is used by MrKWatkins and ngoc.
+  others. Those two are worth keeping as separate credits, because PokerStove's
+  stride is 13 bits, not 16. The 16-bit lane stride specifically is used by
+  MrKWatkins, ngoc and OMPEval.
 - Detecting a run by ANDing shifted copies of a bitboard predates poker work
   entirely. The canonical reference is John Tromp's
   [Fhourstones](https://en.wikipedia.org/wiki/Fhourstones) Connect-4 solver

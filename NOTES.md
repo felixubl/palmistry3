@@ -6,6 +6,8 @@
 make            # eval, test and bench into build/
 make test       # exhaustive correctness, takes a few seconds
 make bench      # throughput, both workloads, both entry points
+make bench-threads   # thread scaling, both schedulers
+compare/run.sh  # clones ACE_eval, OMPEval, phevaluator and measures against them
 ```
 
 ## One evaluator, two widths
@@ -84,14 +86,20 @@ to inline it at `-O3` because the body is over its size budget, and then every
 call pays a `bl`, a `ret`, a `this` it never reads, and a 64-bit literal that
 should have been hoisted out of the caller's loop.
 
-**The batch path's transpose is free, and that is why it is worth having.** Vector
-code needs one register per suit holding eight hands, which is the transpose of
-one word per hand holding four suits. `vld4q_u16` de-interleaves on the way in, so
-it lands suit s of hand h in `val[s]` lane h at no extra cost. This works only
-because a hand's four suit lanes are contiguous 16-bit words, which is a
-consequence of the 16-bit lane stride chosen so a card's code is its own bit
-index. Change the stride or the lane order and the batch path loses its reason to
-exist.
+**The batch path's transpose costs one instruction, not zero.** Vector code needs
+one register per suit holding eight hands, which is the transpose of one word per
+hand holding four suits. `vld4q_u16` de-interleaves on the way in, landing suit s
+of hand h in `val[s]` lane h. This works only because a hand's four suit lanes are
+contiguous 16-bit words, which is a consequence of the 16-bit lane stride chosen so
+a card's code is its own bit index. Change the stride or the lane order and the
+batch path loses its reason to exist.
+
+Measured, so do not repeat the "free" claim that was here before: feeding the same
+kernel four already-transposed suit-major arrays through four plain `vld1q_u16` is
+about **6% faster** than `vld4q_u16`. That 6% is available to a caller willing to
+hold hands suit-major and to accept a four-array API. It is not available to anyone
+holding ordinary `Hand`s, for whom the alternative is an explicit swizzle rather
+than a plain load, which is the thing LD4 exists to replace.
 
 **Branchless is a liability scalar and an asset batched, and both facts are
 measured.** Computing a candidate for all nine categories and selecting was under

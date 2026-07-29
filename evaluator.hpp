@@ -368,14 +368,22 @@ struct Evaluator {
     // Same evaluator, eight hands wide. Two things make that pay rather than
     // merely work.
     //
-    // The transpose is free. Vector code wants one register per suit holding
-    // eight hands, which is the transpose of one word per hand holding four
-    // suits, and a transpose normally costs a fistful of shuffles. But eight
-    // consecutive Hands are thirty-two consecutive uint16, every fourth of
-    // which is the same suit, so `vld4q_u16` -- a four-way de-interleaving load
-    // -- lands suit s of hand h in val[s] lane h. The load IS the transpose,
-    // for no instructions at all. That is a dividend on the 16-bit lane stride,
-    // which was chosen so that a card's code is its own bit index.
+    // The transpose costs one instruction. Vector code wants one register per
+    // suit holding eight hands, which is the transpose of one word per hand
+    // holding four suits, and a transpose normally costs a fistful of shuffles.
+    // But eight consecutive Hands are thirty-two consecutive uint16, every
+    // fourth of which is the same suit, so `vld4q_u16` -- a four-way
+    // de-interleaving load -- lands suit s of hand h in val[s] lane h. That is a
+    // dividend on the 16-bit lane stride, which was chosen so a card's code is
+    // its own bit index.
+    //
+    // One instruction is not the same as free, and the difference is measurable:
+    // handing this kernel four already-transposed suit-major arrays and loading
+    // them with four plain vld1q_u16 runs about 6% faster. So a caller that
+    // generates its own hands can buy that 6% by storing them suit-major, at the
+    // cost of an API that takes four arrays instead of one. Anyone holding
+    // ordinary Hands pays the 6% and should, since the alternative is not a plain
+    // load but an explicit swizzle, which is what LD4 exists to avoid.
     //
     // Being branchless stops being a liability. Eight hands in one register
     // disagree about their category, so the cascade has to become a chain of
