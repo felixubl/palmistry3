@@ -11,3 +11,6 @@ compile_commands.json
 .vscode/
 .idea/
 *.swp
+
+# cross-project comparison clones the rivals it measures against
+compare/rivals/
