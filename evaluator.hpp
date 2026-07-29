@@ -183,8 +183,8 @@ inline FlushInfo flush_info(Hand hand) noexcept {
     return FlushInfo{vget_lane_u64(vreinterpret_u64_u16(counts), 0), hit};
 }
 
-// Byte offset of the flushing suit's lane. Only valid when hit != 0, which is
-// what makes the ctz guard unnecessary.
+// Bit offset of the flushing suit's lane, i.e. 16 per lane. Only valid when
+// hit != 0, which is what makes the ctz guard unnecessary.
 inline uint32_t flush_shift(uint64_t hit) noexcept {
     return uint32_t(__builtin_ctzll(hit));
 }
@@ -512,7 +512,6 @@ struct Evaluator {
         for (; i + 8 <= n; i += 8) evaluate8(in + i, out + i);
         for (; i < n; ++i) out[i] = evaluate(in[i]);
     }
-
 };
 
 // ---------------------------------------------------------------------------
