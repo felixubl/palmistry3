@@ -642,7 +642,10 @@ evidence than finding it:
 2. The NEON `cnt` + `uaddlp` lowering of the suit count. The SWAR equivalent is
    girving's, from 2011.
 
-Descended from [palmistry2](https://github.com/felixubl/palmistry2).
+Descended from [palmistry2](https://github.com/felixubl/palmistry2), which
+descends in turn from four earlier generations going back to September 2025.
+[LINEAGE.md](LINEAGE.md) tells that story, and each generation's history is in
+this repository on a `history/*` branch.
 
 ## Licence
 
