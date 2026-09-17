@@ -7,6 +7,10 @@
 //   - the category frequencies over all C(52,7) = 133,784,560 hands
 //   - the number of distinct hand values, 4824
 //
+// The enumeration goes through the eight-wide evaluate_batch and cross-checks
+// every score against the scalar evaluate, so the two entry points cannot drift
+// apart: the histogram and the distinct count then vouch for both at once.
+//
 // Between them those pin down both the category cascade and the kicker packing:
 // drop a kicker and the distinct count falls, mis-rank a category and the
 // histogram moves. A table of hand-versus-hand comparisons covers the
@@ -191,6 +195,26 @@ static void test_exhaustive() {
     ScoreSet distinct;
     uint64_t histogram[9] = {};
     uint64_t hands = 0;
+    uint64_t disagreements = 0;
+
+    // Buffered so the batch kernel gets its eight-hand blocks. 1024 is not
+    // load-bearing, it just keeps the buffers in L1.
+    constexpr size_t kBuffer = 1024;
+    std::vector<Hand> buffer(kBuffer);
+    std::vector<Score> scores(kBuffer);
+    size_t held = 0;
+
+    const auto drain = [&] {
+        eval.evaluate_batch(buffer.data(), scores.data(), held);
+        for (size_t i = 0; i < held; ++i) {
+            const Score s = scores[i];
+            if (s != eval.evaluate(buffer[i])) ++disagreements;
+            ++histogram[score_category(s)];
+            distinct.insert(s);
+            ++hands;
+        }
+        held = 0;
+    };
 
     for (int a = 0; a < 52; ++a) { const Hand ha = bit[a];
     for (int b = a + 1; b < 52; ++b) { const Hand hb = ha | bit[b];
@@ -199,13 +223,15 @@ static void test_exhaustive() {
     for (int e = d + 1; e < 52; ++e) { const Hand he = hd | bit[e];
     for (int f = e + 1; f < 52; ++f) { const Hand hf = he | bit[f];
     for (int g = f + 1; g < 52; ++g) {
-        const Score s = eval.evaluate(hf | bit[g]);
-        ++histogram[score_category(s)];
-        distinct.insert(s);
-        ++hands;
+        buffer[held++] = hf | bit[g];
+        if (held == kBuffer) drain();
     }}}}}}}
+    drain();
 
     check(hands == kExpectedHands, "hand count");
+    std::printf("  %-14s %10llu  %s\n", "batch vs scalar", (unsigned long long)disagreements,
+                disagreements == 0 ? "ok" : "MISMATCH");
+    check(disagreements == 0, "batch path agrees with scalar path");
     for (uint32_t i = 0; i < 9; ++i) {
         const bool ok = histogram[i] == kExpectedHistogram[i];
         std::printf("  %-14s %10llu  %s\n", category_name(i),
@@ -217,9 +243,37 @@ static void test_exhaustive() {
     check(distinct.count() == kExpectedDistinct, "distinct hand values");
 }
 
+// evaluate_batch hands any leftover under eight to the scalar path, so every
+// remainder length needs exercising rather than assuming.
+static void test_batch_tails() {
+    std::printf("batch tail lengths\n");
+    const Evaluator eval;
+    std::vector<Hand> in(64);
+    std::vector<Score> out(64);
+    for (size_t len = 0; len <= 40; ++len) {
+        for (size_t i = 0; i < len; ++i) {
+            Hand h = 0;
+            for (uint32_t k = 0; k < 7; ++k) {
+                add_card(h, make_card((uint32_t(i) + k) & 3u, uint32_t((i * 5 + k * 3) % 13)));
+            }
+            // The construction can collide and produce fewer than seven cards,
+            // which is fine here: both paths must agree on whatever it produces.
+            in[i] = h;
+        }
+        eval.evaluate_batch(in.data(), out.data(), len);
+        for (size_t i = 0; i < len; ++i) {
+            if (out[i] != eval.evaluate(in[i])) {
+                std::printf("  FAIL  batch/scalar disagree at length %zu, index %zu\n", len, i);
+                ++failures;
+            }
+        }
+    }
+}
+
 int main() {
     test_categories();
     test_ordering();
+    test_batch_tails();
     test_exhaustive();
     if (failures == 0) {
         std::printf("\nall checks passed\n");
