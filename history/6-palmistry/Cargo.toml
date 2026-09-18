@@ -1,0 +1,26 @@
+[package]
+name = "poker_eval"
+version = "0.1.0"
+edition = "2021"
+authors = ["Felix Ubl"]
+description = "Fast Texas Hold'em hand evaluation and equity calculation"
+repository = "https://github.com/felixubl/palmistry"
+license = "MIT OR Apache-2.0"
+keywords = ["poker", "holdem", "equity", "evaluation"]
+categories = ["games", "algorithms"]
+
+[lib]
+name = "poker_eval"
+path = "src/lib.rs"
+
+[dependencies]
+rayon = { version = "1.10", optional = true }
+
+[features]
+default = []
+parallel = ["dep:rayon"]
+
+[profile.release]
+lto = true
+codegen-units = 1
+panic = "abort"
