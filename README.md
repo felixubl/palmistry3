@@ -643,9 +643,9 @@ evidence than finding it:
    girving's, from 2011.
 
 Descended from [palmistry2](https://github.com/felixubl/palmistry2), which
-descends in turn from four earlier generations going back to September 2025.
-[LINEAGE.md](LINEAGE.md) tells that story, and each generation's history is in
-this repository on a `history/*` branch.
+descends in turn from six earlier generations going back to September 2025.
+[LINEAGE.md](LINEAGE.md) tells that story, and every generation is in this
+repository under [`history/`](history).
 
 ## Licence
 
