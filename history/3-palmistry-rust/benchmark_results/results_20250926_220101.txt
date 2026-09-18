@@ -1,0 +1,65 @@
+Benchmark started at Fri Sep 26 22:01:01 CEST 2025
+System: arm64 on macOS 15.6
+
+=== Building ===
+   Compiling palmistry-rust v0.1.0 (/Users/felixubl/code/palmistry/palmistry-rust)
+    Finished `release` profile [optimized] target(s) in 0.49s
+
+=== Binary Info ===
+Binary size: 485K
+
+=== Performance Measurements ===
+
+--- Small: 1,000,000 hands ---
+Throughput:        130.16 M hands/sec
+Time/hand:         8.0 ns
+Instructions/hand: 3540
+Cycles/hand:       760
+IPC:               4.66
+RSS:               9.0 MB
+Page faults:       891
+
+--- Medium: 10,000,000 hands ---
+Throughput:        127.66 M hands/sec
+Time/hand:         7.8 ns
+Instructions/hand: 3515
+Cycles/hand:       751
+IPC:               4.68
+RSS:               77.7 MB
+Page faults:       5,286
+
+--- Large: 100,000,000 hands ---
+Throughput:        126.48 M hands/sec
+Time/hand:         7.9 ns
+Instructions/hand: 3513
+Cycles/hand:       751
+IPC:               4.68
+RSS:               764.3 MB
+Page faults:       49,233
+
+=== System Info ===
+CPU: Apple M4 Pro
+
+Cache sizes:
+  L1I: 192 KB
+  L1D: 128 KB
+  L2:  16.0 MB
+
+=== Performance Summary ===
+
+Throughput across scales:
+      1M hands: 130.16 M/sec (IPC: 4.66)
+     10M hands: 127.66 M/sec (IPC: 4.68)
+    100M hands: 126.48 M/sec (IPC: 4.68)
+
+Average: 128.10 M hands/sec
+Variance: 3.68 M/sec (2.9%)
+
+Average IPC: 4.67
+→ IPC ≥ 4.5 indicates L1 cache residency
+
+=========================================
+         Benchmark Complete
+=========================================
+
+All results in: benchmark_results/

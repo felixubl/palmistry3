@@ -1,0 +1,6 @@
+Benchmark started at Fri Sep 26 21:51:21 CEST 2025
+System: arm64 on macOS 15.6
+
+=== Building ===
+For more information about this error, try `rustc --explain E0425`.
+error: could not compile `palmistry-rust` (example "throughput") due to 2 previous errors

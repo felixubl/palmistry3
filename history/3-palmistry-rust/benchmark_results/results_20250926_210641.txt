@@ -1,0 +1,130 @@
+Benchmark started at Fri Sep 26 21:06:41 CEST 2025
+System: arm64 on macOS 15.6
+
+=== Building with optimizations ===
+   Compiling palmistry-rust v0.1.0 (/Users/felixubl/code/palmistry/palmistry-rust)
+   Compiling ciborium v0.2.2
+   Compiling tinytemplate v1.2.1
+   Compiling criterion v0.5.1
+    Finished `release` profile [optimized] target(s) in 13.26s
+
+=== Binary Analysis ===
+Binary size: 468K
+LUT sizes:
+  - POPCNT13:       8,192 entries × 1 byte  = 8 KB
+  - HIBIT13:        8,192 entries × 1 byte  = 8 KB
+  - STRAIGHT_END13: 8,192 entries × 2 bytes = 16 KB
+  - Total LUTs: 32 KB
+
+=== Performance Benchmarks ===
+
+--- Warmup/Small: 1000000 hands ---
+
+Throughput:        125.39 M hands/sec
+Time per hand:     8.0 ns
+Instructions/hand: 3237
+Cycles/hand:       704
+IPC:               4.60
+Cache behavior:    EXCELLENT - Data fully in L1 cache
+Memory (RSS):      9.0 MB
+Page faults:       892
+Context switches:  0
+--- Medium: 10000000 hands ---
+
+Throughput:        123.78 M hands/sec
+Time per hand:     8.1 ns
+Instructions/hand: 3211
+Cycles/hand:       695
+IPC:               4.62
+Cache behavior:    EXCELLENT - Data fully in L1 cache
+Memory (RSS):      77.7 MB
+Page faults:       5285
+Context switches:  0
+--- Large: 100000000 hands ---
+
+Throughput:        123.25 M hands/sec
+Time per hand:     8.1 ns
+Instructions/hand: 3208
+Cycles/hand:       694
+IPC:               4.62
+Cache behavior:    EXCELLENT - Data fully in L1 cache
+Memory (RSS):      764.3 MB
+Page faults:       49231
+Context switches:  0
+=== Memory Access Pattern Analysis ===
+
+Expected memory access pattern per hand evaluation:
+
+1. Initial setup (4 loads):
+   - Load 4 suit masks from hand[0..3]
+
+2. Rank aggregation (bitwise ops, no memory):
+   - Calculate ranks, ge2, ge3, ge4 masks
+
+3. LUT accesses for analysis:
+   - popcnt13: 4-7 accesses (checking flush conditions)
+   - straight_end13: 1-5 accesses (checking straights)
+   - msb_index: 5-15 accesses (finding high cards)
+
+Total estimated: 15-30 LUT accesses per hand
+At 8 bytes/access: 120-240 bytes touched per hand
+
+Cache line efficiency:
+- 64-byte cache lines
+- LUTs are dense (8192 entries)
+- Sequential access pattern for similar hands
+- Excellent spatial locality
+
+=== Cache Hierarchy Analysis ===
+
+CPU: Apple M4 Pro
+
+Cache sizes detected:
+  L1 Instruction: 192 KB
+  L1 Data:        128 KB
+  L2 Unified:     16384 KB
+
+LUT fit analysis:
+  32 KB LUTs use 25.0% of L1D cache
+  Remaining L1D: 96 KB for stack/heap/code
+
+=== Comparative Performance Analysis ===
+
+Your evaluator: 123.25M hands/sec
+
+Comparison to other evaluators:
+  SKPokerEval:     ~250M hands/sec  (2x faster, uses 135KB perfect hash)
+  OMPEval:         ~175M hands/sec  (1.4x faster, uses larger LUTs)
+  Your evaluator:  ~123M hands/sec  (excellent for 32KB footprint!)
+  Cactus Kev:      ~15M hands/sec   (8x slower)
+  Naive 21-combo:  ~1M hands/sec    (100x slower)
+
+Your efficiency:
+  3.85M hands/sec per KB of LUT
+  This is excellent efficiency!
+
+=== CPU Sampling Profile (1 second) ===
+Running sample profiler...
+Top functions by sample count:
+Call graph:
+    856 Thread_8772980   DispatchQueue_1: com.apple.main-thread  (serial)
+      856 start  (in dyld) + 6076  [0x1904a6b98]
+        856 main  (in throughput) + 52  [0x10498acf4]
+          856 std::rt::lang_start_internal::hdb28e94b6865fa11  (in throughput) + 940  [0x1049a17f0]
+            856 std::rt::lang_start::_$u7b$$u7b$closure$u7d$$u7d$::h20a7822b209b6837  (in throughput) + 16  [0x1049892b4]
+              856 std::sys::backtrace::__rust_begin_short_backtrace::h57fc8009450131ec  (in throughput) + 12  [0x1049892cc]
+                789 rand::rng::Rng::gen_range::hdb82d18cf582ab12  (in throughput) + 152,4504,...  [0x1049894c0,0x10498a5c0,...]
+                49 throughput::main::h794f7f21fb621e97  (in throughput) + 644,696,...  [0x10498a9b4,0x10498a9e8,...]
+                11 throughput::main::h794f7f21fb621e97  (in throughput) + 780  [0x10498aa3c]
+                + 11 palmistry_rust::eval_lut::add_card::hf8f612640e651d0a  (in throughput) + 48,20  [0x10498b064,0x10498b048]
+                7 throughput::main::h794f7f21fb621e97  (in throughput) + 716  [0x10498a9fc]
+                  7 rand::rng::Rng::gen_range::hdb82d18cf582ab12  (in throughput) + 20,16,...  [0x10498943c,0x104989438,...]
+
+Total number in stack (recursive counted multiple, when >=5):
+
+Sort by top of stack, same collapsed (when >= 5):
+        rand::rng::Rng::gen_range::hdb82d18cf582ab12  (in throughput)        796
+        throughput::main::h794f7f21fb621e97  (in throughput)        49
+        palmistry_rust::eval_lut::add_card::hf8f612640e651d0a  (in throughput)        11
+
+=== Creating Performance Summary ===

@@ -1,0 +1,1 @@
+LUT evaluator: processed 1000000 hands in 0.008 s  →     130676967 hands/s  (≈    7.7 ns/hand)

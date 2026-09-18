@@ -1,0 +1,6 @@
+Benchmark started at Fri Sep 26 21:56:29 CEST 2025
+System: arm64 on macOS 15.6
+
+=== Building ===
+warning: `palmistry-rust` (lib) generated 1 warning
+error: could not compile `palmistry-rust` (lib) due to 1 previous error; 1 warning emitted
