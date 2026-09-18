@@ -1,0 +1,29 @@
+[package]
+name = "poker-eval"
+version = "0.1.0"
+edition = "2025"
+repository = ""
+
+[lib]
+name = "poker_eval"
+crate-type = ["rlib", "cdylib"]
+
+[features]
+default = []
+python = ["pyo3/extension-module"]
+parallel = ["rayon"]
+
+[dependencies]
+once_cell = "1.19"
+rand = "0.8"
+smallvec = "1.13"
+itertools = "0.13"
+pyo3 = { version = "0.21", optional = true, features = ["abi3-py39"] }
+rayon = { version = "1.10", optional = true }
+
+[profile.release]
+# tune for speed
+lto = "fat"
+codegen-units = 1
+opt-level = "z"
+panic = "abort"
