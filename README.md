@@ -1,5 +1,7 @@
 # palmistry3
 
+Disclaimer: After writing my own little hand evaluator I wanted to test what Claude can design. And well, it just took a few prompts and some slight corrections and one little thing I actually proposed (I was quite proud of that) and it wrote probably the fastest 7 Hand Poker Evaluator that does not use any look-up-tables there is...
+
 Zero-lookup-table 7-card Texas Hold'em poker hand evaluator in C++.
 
 Most fast poker evaluators are fast because they precompute. They build a table,
